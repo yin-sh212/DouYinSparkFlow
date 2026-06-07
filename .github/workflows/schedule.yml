@@ -29,7 +29,23 @@ jobs:
         SECRETS_JSON: ${{ toJson(secrets) }}
       run: python utils/export_github_env.py
     - name: Run DouYin Spark Flow
-      run: python main.py
+      shell: bash
+      run: |
+        set +e
+        for i in 1 2 3; do
+          echo "=== 第 $i/3 次尝试 ==="
+          python main.py
+          if [ $? -eq 0 ]; then
+            echo "运行成功"
+            exit 0
+          fi
+          if [ $i -lt 3 ]; then
+            echo "运行失败，30 秒后重试..."
+            sleep 30
+          fi
+        done
+        echo "3 次尝试全部失败"
+        exit 1
     - uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
       with:
